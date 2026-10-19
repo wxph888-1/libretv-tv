@@ -35,7 +35,7 @@ class MainActivity : Activity() {
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
             )
 
-        web.loadUrl("http://192.168.50.221:8080")
+        web.loadUrl("http://192.168.50.210:8080")
     }
 
     @Suppress("DEPRECATION")
