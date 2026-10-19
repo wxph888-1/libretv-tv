@@ -22,7 +22,7 @@ class MainActivity : Activity() {
 
     // 视频全屏状态
     private var customView: View? = null
-    private var customCallback: android.webkit.CustomViewCallback? = null
+    private var customCallback: WebChromeClient.CustomViewCallback? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,7 +79,7 @@ class MainActivity : Activity() {
             }
 
             // 视频进入全屏
-            override fun onShowCustomView(view: View?, callback: android.webkit.CustomViewCallback?) {
+            override fun onShowCustomView(view: View?, callback: WebChromeClient.CustomViewCallback?) {
                 if (customView != null) {
                     callback?.onCustomViewHidden(); return
                 }
