@@ -69,6 +69,31 @@ class MainActivity : Activity() {
                 })();
                 """
                 view?.evaluateJavascript(js, null)
+
+                // 进入播放页后，发现视频就自动铺满全屏
+                val fitJs = """
+                (function(){
+                  if(window.__videoFit) return; window.__videoFit = true;
+                  function fit(v){
+                    if(!v || v.__fitted) return;
+                    v.__fitted = true;
+                    v.style.position='fixed';
+                    v.style.top='0'; v.style.left='0';
+                    v.style.width='100vw'; v.style.height='100vh';
+                    v.style.zIndex='999999';
+                    v.style.objectFit='contain';
+                    v.style.background='#000';
+                    try{ v.requestFullscreen && v.requestFullscreen(); }catch(e){}
+                  }
+                  function scan(){
+                    var v = document.querySelector('video');
+                    if(v) fit(v);
+                  }
+                  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true});
+                  setInterval(scan, 1500);
+                })();
+                """
+                view?.evaluateJavascript(fitJs, null)
             }
         }
 
