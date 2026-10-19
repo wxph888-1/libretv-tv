@@ -94,6 +94,36 @@ class MainActivity : Activity() {
                 })();
                 """
                 view?.evaluateJavascript(fitJs, null)
+
+                // 自动启用直播源：找"全部启用"按钮点掉，再勾选未启用的直播源
+                val liveJs = """
+                (function(){
+                  if(window.__liveAuto) return; window.__liveAuto = true;
+                  function scan(){
+                    // 1) 点"全部启用"按钮
+                    var btns = document.querySelectorAll('button,div,span,a');
+                    for(var i=0;i<btns.length;i++){
+                      var t = (btns[i].textContent||'').trim();
+                      if(t==='全部启用' && btns[i].offsetParent!==null){ btns[i].click(); }
+                    }
+                    // 2) 找未勾选的直播源 checkbox，点它的父label/容器
+                    var cbs = document.querySelectorAll('input[type=checkbox]');
+                    for(var j=0;j<cbs.length;j++){
+                      var cb = cbs[j];
+                      if(cb.checked) continue;
+                      var box = cb.closest('div,label,li');
+                      var txt = box ? (box.textContent||'') : '';
+                      if(txt.indexOf('央卫')>=0 || txt.indexOf('live.m3u')>=0 || txt.indexOf('直播')>=0){
+                        var clickable = cb.closest('label') || box;
+                        if(clickable) clickable.click();
+                        else cb.click();
+                      }
+                    }
+                  }
+                  setInterval(scan, 2000);
+                })();
+                """
+                view?.evaluateJavascript(liveJs, null)
             }
         }
 
