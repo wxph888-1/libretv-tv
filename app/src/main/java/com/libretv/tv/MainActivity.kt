@@ -3,8 +3,11 @@ package com.libretv.tv
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
+import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 
@@ -16,6 +19,7 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WebView.setWebContentsDebuggingEnabled(true)
         web = WebView(this)
         setContentView(web)
 
@@ -23,6 +27,11 @@ class MainActivity : Activity() {
         web.settings.domStorageEnabled = true
         web.settings.databaseEnabled = true
         web.settings.mediaPlaybackRequiresUserGesture = false
+        web.settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        web.settings.loadsImagesAutomatically = true
+        web.settings.useWideViewPort = true
+        web.settings.loadWithOverviewMode = true
+        web.settings.cacheMode = WebSettings.LOAD_DEFAULT
 
         // 持久化 cookie，记住登录
         CookieManager.getInstance().setAcceptCookie(true)
@@ -31,7 +40,6 @@ class MainActivity : Activity() {
         web.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // 轮询等待 React 渲染出登录表单，再自动填密码
                 val js = """
                 (function(){
                   if(window.__autoLoginTimer) return;
@@ -56,9 +64,13 @@ class MainActivity : Activity() {
                 view?.evaluateJavascript(js, null)
             }
         }
-        web.webChromeClient = WebChromeClient()
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(cm: ConsoleMessage): Boolean {
+                Log.i("LTV", "[${cm.messageLevel()}] ${cm.message()}  @${cm.sourceId()}:${cm.lineNumber()}")
+                return true
+            }
+        }
 
-        // 全屏沉浸
         window.decorView.systemUiVisibility = (
             android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
                 or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
