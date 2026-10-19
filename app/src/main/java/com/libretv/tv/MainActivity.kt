@@ -4,17 +4,26 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
+import android.webkit.CustomViewCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 
 class MainActivity : Activity() {
 
     private lateinit var web: WebView
     private val PASSWORD = "libretv"
+
+    // 视频全屏状态
+    private var customView: View? = null
+    private var customCallback: CustomViewCallback? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +42,6 @@ class MainActivity : Activity() {
         web.settings.loadWithOverviewMode = true
         web.settings.cacheMode = WebSettings.LOAD_DEFAULT
 
-        // 持久化 cookie，记住登录
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
 
@@ -64,27 +72,59 @@ class MainActivity : Activity() {
                 view?.evaluateJavascript(js, null)
             }
         }
+
         web.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(cm: ConsoleMessage): Boolean {
-                Log.i("LTV", "[${cm.messageLevel()}] ${cm.message()}  @${cm.sourceId()}:${cm.lineNumber()}")
+                Log.i("LTV", "[${cm.messageLevel()}] ${cm.message()}")
                 return true
             }
-        }
 
-        window.decorView.systemUiVisibility = (
-            android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
-                or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            )
+            // 视频进入全屏
+            override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                if (customView != null) {
+                    callback?.onCustomViewHidden(); return
+                }
+                customView = view
+                customCallback = callback
+                web.visibility = View.GONE
+                val params = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                (window.decorView as ViewGroup).addView(view, params)
+                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                window.decorView.systemUiVisibility = (
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                )
+            }
+
+            // 视频退出全屏
+            override fun onHideCustomView() {
+                if (customView == null) return
+                (window.decorView as ViewGroup).removeView(customView)
+                customView = null
+                web.visibility = View.VISIBLE
+                customCallback?.onCustomViewHidden()
+                customCallback = null
+                window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            }
+        }
 
         web.loadUrl("http://192.168.50.210:8080")
     }
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
+        // 全屏播放时按返回先退出全屏
+        if (customView != null) {
+            web.webChromeClient?.onHideCustomView()
+            return
+        }
         if (web.canGoBack()) web.goBack() else super.onBackPressed()
     }
 }
