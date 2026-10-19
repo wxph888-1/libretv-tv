@@ -31,19 +31,26 @@ class MainActivity : Activity() {
         web.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // 自动填密码并提交登录
+                // 轮询等待 React 渲染出登录表单，再自动填密码
                 val js = """
                 (function(){
-                  var p = document.querySelector('input[type=password]');
-                  if(!p) return;
-                  var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                  setter.call(p, '$PASSWORD');
-                  p.dispatchEvent(new Event('input', {bubbles:true}));
-                  setTimeout(function(){
-                    var form = p.closest('form');
-                    if(form) { form.requestSubmit ? form.requestSubmit() : form.submit(); }
-                    else { var btn = document.querySelector('button[type=submit],button'); if(btn) btn.click(); }
-                  }, 200);
+                  if(window.__autoLoginTimer) return;
+                  var tries = 0;
+                  window.__autoLoginTimer = setInterval(function(){
+                    tries++;
+                    var p = document.querySelector('input[type=password]');
+                    if(!p || tries > 30){ clearInterval(window.__autoLoginTimer); return; }
+                    var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    setter.call(p, '$PASSWORD');
+                    p.dispatchEvent(new Event('input', {bubbles:true}));
+                    p.dispatchEvent(new Event('change', {bubbles:true}));
+                    setTimeout(function(){
+                      var btn = document.querySelector('button[type=submit]');
+                      if(!btn){ var btns = document.querySelectorAll('button'); for(var i=0;i<btns.length;i++){ if(btns[i].offsetParent!==null){ btn=btns[i]; break; } } }
+                      if(btn){ btn.click(); }
+                      clearInterval(window.__autoLoginTimer);
+                    }, 400);
+                  }, 400);
                 })();
                 """
                 view?.evaluateJavascript(js, null)
