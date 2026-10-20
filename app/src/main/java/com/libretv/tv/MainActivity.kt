@@ -205,20 +205,47 @@ class MainActivity : Activity() {
                   }
                   window.__doReveal=function(on){
                     window.__revealed=on;
+                    window.__epIdx=-1;
                     document.querySelectorAll('video').forEach(function(v){
                       v.style.zIndex = on ? '1' : '999999';
                       v.style.opacity = on ? '0.25' : '1';
                     });
-                    if(on){ // 尝试滚动到选集区域
-                      var ep=[...document.querySelectorAll('*')].find(e=>/选集|正片|剧集/.test(e.textContent||'')&&e.children.length<6);
-                      if(ep) ep.scrollIntoView({block:'center',behavior:'smooth'});
-                      showMsg('选集/控制栏已显示');
+                    if(on){
+                      showMsg('请选择集数');
+                      setTimeout(function(){
+                        var eps=[...document.querySelectorAll('button,a,div,span,li')].filter(function(e){
+                          if(!e.offsetParent) return false;
+                          var t=(e.textContent||'').trim();
+                          return t.length<=8 && e.children.length<=2 && /^第?\s*\d+\s*集?$|^EP?\d+|^正片$|^\d{1,3}$/.test(t);
+                        });
+                        window.__eps=eps;
+                        if(eps.length){ window.__epIdx=0; paintEp(); }
+                      }, 300);
+                    } else {
+                      clearEpPaint();
                     }
                   };
+                  function clearEpPaint(){
+                    (window.__eps||[]).forEach(function(e){e.style.outline='';e.style.background='';});
+                  }
+                  function paintEp(){
+                    clearEpPaint();
+                    var eps=window.__eps||[];
+                    eps.forEach(function(e,i){
+                      if(i===window.__epIdx){ e.style.outline='3px solid #3b5bff'; e.style.outlineOffset='2px'; e.style.background='#3b5bff'; e.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+                    });
+                  }
                   document.addEventListener('keydown',function(e){
-                    var v=vid(); if(!v) return;
+                    var v=vid();
                     if(location.pathname.indexOf('live')>=0) return;
                     var k=e.key||'';
+                    // 选集面板打开时：方向键选集，确认切集
+                    if(window.__revealed && window.__eps && window.__eps.length){
+                      if(k==='ArrowUp'||k==='ArrowLeft'){ e.preventDefault(); e.stopPropagation(); window.__epIdx=(window.__epIdx-1+window.__eps.length)%window.__eps.length; paintEp(); return; }
+                      if(k==='ArrowDown'||k==='ArrowRight'){ e.preventDefault(); e.stopPropagation(); window.__epIdx=(window.__epIdx+1)%window.__eps.length; paintEp(); return; }
+                      if(k==='Enter'||k===' '){ e.preventDefault(); e.stopPropagation(); var t=window.__eps[window.__epIdx]; t.click(); showMsg('播放: '+(t.textContent||'').trim()); setTimeout(function(){window.__doReveal(false);},400); return; }
+                    }
+                    if(!v) return;
                     if(k==='Enter'||k===' '){
                       e.preventDefault(); e.stopPropagation();
                       if(v.paused){v.play(); showMsg('▶ 播放');} else {v.pause(); showMsg('⏸ 已暂停');}
