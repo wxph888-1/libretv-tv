@@ -75,22 +75,19 @@ class MainActivity : Activity() {
                 (function(){
                   if(window.__videoFit) return; window.__videoFit = true;
                   function fit(v){
-                    if(!v || v.__fitted) return;
-                    v.__fitted = true;
+                    if(!v) return;
                     v.style.position='fixed';
                     v.style.top='0'; v.style.left='0';
                     v.style.width='100vw'; v.style.height='100vh';
-                    v.style.zIndex='999999';
+                    v.style.zIndex = (window.__revealed ? '1' : '999999');
                     v.style.objectFit='contain';
                     v.style.background='#000';
-                    try{ v.requestFullscreen && v.requestFullscreen(); }catch(e){}
                   }
                   function scan(){
-                    var v = document.querySelector('video');
-                    if(v) fit(v);
+                    document.querySelectorAll('video').forEach(function(v){ fit(v); });
                   }
                   new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true});
-                  setInterval(scan, 1500);
+                  setInterval(scan, 1000);
                 })();
                 """
                 view?.evaluateJavascript(fitJs, null)
@@ -219,7 +216,15 @@ class MainActivity : Activity() {
                           return t.length<=8 && e.children.length<=2 && /^第?\s*\d+\s*集?$|^EP?\d+|^正片$|^\d{1,3}$/.test(t);
                         });
                         window.__eps=eps;
-                        if(eps.length){ window.__epIdx=0; paintEp(); }
+                        if(eps.length){
+                          // 默认锁定到当前正在播放的集
+                          var cur=eps.findIndex(function(e){
+                            var cls=(e.className||'')+' '+(e.parentElement?e.parentElement.className:'');
+                            return /active|playing|current|selected|text-primary|bg-primary/i.test(cls) || /播放中|正在播放/.test(e.textContent||'');
+                          });
+                          window.__epIdx = cur>=0 ? cur : 0;
+                          paintEp();
+                        }
                       }, 300);
                     } else {
                       clearEpPaint();
