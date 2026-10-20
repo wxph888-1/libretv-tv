@@ -207,7 +207,7 @@ class MainActivity : Activity() {
                   function showMsg(t){
                     var m=document.getElementById('__msg');
                     if(!m){m=document.createElement('div');m.id='__msg';
-                      m.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1000005;background:rgba(0,0,0,0.72);color:#fff;padding:16px 28px;border-radius:12px;font-size:26px;transition:opacity .3s;';
+                      m.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;background:rgba(0,0,0,0.72);color:#fff;padding:16px 28px;border-radius:12px;font-size:26px;transition:opacity .3s;';
                       document.body.appendChild(m);}
                     m.textContent=t; m.style.opacity='1';
                     clearTimeout(m.__t); m.__t=setTimeout(function(){m.style.opacity='0';},1200);
@@ -256,7 +256,7 @@ class MainActivity : Activity() {
                   function ctrlBar(){
                     var c=document.getElementById('__ctrl');
                     if(!c){ c=document.createElement('div'); c.id='__ctrl';
-                      c.style.cssText='position:fixed;left:0;right:0;bottom:0;height:120px;z-index:2147483646;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:0 30px 18px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;transition:opacity .3s;';
+                      c.style.cssText='position:fixed;left:0;right:0;bottom:0;height:130px;z-index:2147483647;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:0 30px 18px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;transition:opacity .3s;';
                       c.innerHTML='<div style="display:flex;justify-content:space-between;color:#fff;font-size:22px;margin-bottom:10px;"><span id="__ctime">00:00</span><span id="__cspeed" style="color:#5ec4ff;">1.0x</span><span id="__cdur">00:00</span></div><div style="height:6px;background:rgba(255,255,255,0.25);border-radius:3px;overflow:hidden;"><div id="__cprog" style="height:100%;width:0%;background:#3b82f6;"></div></div>';
                       document.body.appendChild(c); }
                     return c;
