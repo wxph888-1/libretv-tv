@@ -124,6 +124,70 @@ class MainActivity : Activity() {
                 })();
                 """
                 view?.evaluateJavascript(liveJs, null)
+
+                // 确认键呼出频道列表面板（遥控器选台）
+                val chListJs = """
+                (function(){
+                  if(window.__chList) return; window.__chList = true;
+                  var panel=null, items=[], focusIdx=-1, open=false;
+                  function rows(){
+                    return [...document.querySelectorAll('div.group.cursor-pointer, [class*="cursor-pointer"][class*="items-center"]')].filter(function(r){
+                      var t=(r.textContent||'').trim();
+                      return t.length>1 && t.length<24 && /直播$/.test(t);
+                    });
+                  }
+                  function close(){
+                    if(panel){ panel.remove(); panel=null; }
+                    items=[]; focusIdx=-1; open=false;
+                  }
+                  function openPanel(){
+                    if(open) { close(); return; }
+                    var rs=rows(); if(!rs.length) return;
+                    open=true;
+                    panel=document.createElement('div');
+                    panel.id='__chpanel';
+                    panel.style.cssText='position:fixed;right:0;top:0;height:100vh;width:34vw;min-width:340px;z-index:1000002;background:rgba(8,10,14,0.92);backdrop-filter:blur(8px);border-left:1px solid rgba(255,255,255,0.1);overflow-y:auto;padding:60px 10px 20px;box-sizing:border-box;';
+                    var h=document.createElement('div');
+                    h.textContent='频道列表（'+rs.length+'）  按返回关闭';
+                    h.style.cssText='position:sticky;top:0;color:#9fb3ff;font-size:18px;padding:6px 10px 14px;background:transparent;';
+                    panel.appendChild(h);
+                    items=[];
+                    rs.forEach(function(r,i){
+                      var name=(r.textContent||'').replace(/直播$/,'').trim();
+                      var it=document.createElement('div');
+                      it.textContent=(i+1)+'. '+name;
+                      it.style.cssText='padding:11px 14px;color:#d8dbe0;font-size:20px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                      it.addEventListener('click',function(){ r.click(); close(); });
+                      it.__row=r;
+                      panel.appendChild(it);
+                      items.push(it);
+                    });
+                    document.body.appendChild(panel);
+                    focusIdx=0; paint();
+                  }
+                  function paint(){
+                    items.forEach(function(it,i){
+                      if(i===focusIdx){ it.style.background='#3b5bff'; it.style.color='#fff'; it.style.transform='translateX(-6px)'; }
+                      else { it.style.background='transparent'; it.style.color='#d8dbe0'; it.style.transform='none'; }
+                    });
+                    if(items[focusIdx]) items[focusIdx].scrollIntoView({block:'nearest'});
+                  }
+                  document.addEventListener('keydown',function(e){
+                    var k=e.key||'';
+                    if(!open){
+                      if(k==='Enter'||k===' ') {
+                        if(location.pathname.indexOf('live')>=0){ e.preventDefault(); openPanel(); }
+                      }
+                      return;
+                    }
+                    if(k==='ArrowUp'){ e.preventDefault(); focusIdx=(focusIdx-1+items.length)%items.length; paint(); }
+                    else if(k==='ArrowDown'){ e.preventDefault(); focusIdx=(focusIdx+1)%items.length; paint(); }
+                    else if(k==='Enter'||k===' '){ e.preventDefault(); if(items[focusIdx]){ items[focusIdx].__row.click(); close(); } }
+                    else if(k==='Escape'||k==='Backspace'){ e.preventDefault(); close(); }
+                  }, true);
+                })();
+                """
+                view?.evaluateJavascript(chListJs, null)
             }
         }
 
