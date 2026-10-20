@@ -271,6 +271,13 @@ class MainActivity : Activity() {
                     clearTimeout(c.__t); c.__t=setTimeout(function(){c.style.opacity='0';},2200);
                   }
                   var __rates=[1,1.25,1.5,2,0.5]; var __ri=0;
+                  // 监听视频自身的 seeking 事件：LibreTV 原生快进/我们的快进都弹进度条
+                  function bindSeek(v){
+                    if(!v || v.__seekBound) return; v.__seekBound=true;
+                    v.addEventListener('seeking', function(){ showCtrl(''); });
+                    v.addEventListener('play', function(){ showCtrl('▶ 播放'); });
+                    v.addEventListener('pause', function(){ showCtrl('⏸ 已暂停'); });
+                  }
                   document.addEventListener('keydown',function(e){
                     var v=vid();
                     if(location.pathname.indexOf('live')>=0) return;
@@ -282,15 +289,16 @@ class MainActivity : Activity() {
                       if(k==='Enter'||k===' '){ e.preventDefault(); e.stopPropagation(); var t=window.__eps[window.__epIdx]; t.click(); showMsg('播放: '+(t.textContent||'').trim()); setTimeout(function(){window.__doReveal(false);},400); return; }
                     }
                     if(!v) return;
+                    bindSeek(v);
                     if(k==='Enter'||k===' '){
                       e.preventDefault(); e.stopPropagation();
-                      if(v.paused){v.play(); showMsg('▶ 播放');} else {v.pause(); showMsg('⏸ 已暂停');}
+                      if(v.paused){v.play(); showCtrl('▶ 播放');} else {v.pause(); showCtrl('⏸ 已暂停');}
                     } else if(k==='ArrowRight'){
-                      e.preventDefault(); e.stopPropagation(); v.currentTime=Math.min((v.duration||0),v.currentTime+10); showCtrl('快进 +10s');
+                      v.currentTime=Math.min((v.duration||0),v.currentTime+10); showCtrl('快进 +10s');
                     } else if(k==='ArrowLeft'){
-                      e.preventDefault(); e.stopPropagation(); v.currentTime=Math.max(0,v.currentTime-10); showCtrl('快退 -10s');
+                      v.currentTime=Math.max(0,v.currentTime-10); showCtrl('快退 -10s');
                     } else if(k==='ArrowUp'){
-                      e.preventDefault(); e.stopPropagation(); __ri=(__ri+1)%__rates.length; v.playbackRate=__rates[__ri]; showCtrl('倍速');
+                      __ri=(__ri+1)%__rates.length; v.playbackRate=__rates[__ri]; showCtrl('倍速');
                     }
                   }, true);
                 })();
