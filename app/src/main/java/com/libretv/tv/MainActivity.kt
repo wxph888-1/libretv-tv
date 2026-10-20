@@ -85,6 +85,11 @@ class MainActivity : Activity() {
                     v.style.setProperty('z-index', (window.__revealed ? '1' : '2147483647'),'important');
                     v.style.setProperty('object-fit','cover','important');
                     v.style.setProperty('background','#000','important');
+                    // 所有祖先容器强制黑底，消除白边
+                    var p=v.parentElement;
+                    while(p && p!==document.body){ p.style.setProperty('background','#000','important'); p.style.setProperty('background-color','#000','important'); p=p.parentElement; }
+                    document.documentElement.style.setProperty('background','#000','important');
+                    document.body.style.setProperty('background','#000','important');
                     // 隐藏顶部标题栏
                     document.querySelectorAll('header,nav,[class*="sticky"]').forEach(function(h){
                       h.style.setProperty('display', window.__revealed ? '' : 'none','important');
@@ -247,6 +252,25 @@ class MainActivity : Activity() {
                       if(i===window.__epIdx){ e.style.outline='3px solid #3b5bff'; e.style.outlineOffset='2px'; e.style.background='#3b5bff'; e.scrollIntoView({block:'nearest',behavior:'smooth'}); }
                     });
                   }
+                  function fmt(t){ if(!isFinite(t)) return '00:00'; var m=Math.floor(t/60), s=Math.floor(t%60); return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
+                  function ctrlBar(){
+                    var c=document.getElementById('__ctrl');
+                    if(!c){ c=document.createElement('div'); c.id='__ctrl';
+                      c.style.cssText='position:fixed;left:0;right:0;bottom:0;height:120px;z-index:2147483646;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:0 30px 18px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;transition:opacity .3s;';
+                      c.innerHTML='<div style="display:flex;justify-content:space-between;color:#fff;font-size:22px;margin-bottom:10px;"><span id="__ctime">00:00</span><span id="__cspeed" style="color:#5ec4ff;">1.0x</span><span id="__cdur">00:00</span></div><div style="height:6px;background:rgba(255,255,255,0.25);border-radius:3px;overflow:hidden;"><div id="__cprog" style="height:100%;width:0%;background:#3b82f6;"></div></div>';
+                      document.body.appendChild(c); }
+                    return c;
+                  }
+                  function showCtrl(msg){
+                    var v=vid(); if(!v) return;
+                    var c=ctrlBar(); c.style.opacity='1';
+                    document.getElementById('__ctime').textContent=fmt(v.currentTime);
+                    document.getElementById('__cdur').textContent=fmt(v.duration);
+                    document.getElementById('__cspeed').textContent=(v.playbackRate||1).toFixed(1)+'x'+(msg?'  '+msg:'');
+                    document.getElementById('__cprog').style.width=(v.duration? (v.currentTime/v.duration*100):0)+'%';
+                    clearTimeout(c.__t); c.__t=setTimeout(function(){c.style.opacity='0';},2200);
+                  }
+                  var __rates=[1,1.25,1.5,2,0.5]; var __ri=0;
                   document.addEventListener('keydown',function(e){
                     var v=vid();
                     if(location.pathname.indexOf('live')>=0) return;
@@ -261,6 +285,12 @@ class MainActivity : Activity() {
                     if(k==='Enter'||k===' '){
                       e.preventDefault(); e.stopPropagation();
                       if(v.paused){v.play(); showMsg('▶ 播放');} else {v.pause(); showMsg('⏸ 已暂停');}
+                    } else if(k==='ArrowRight'){
+                      e.preventDefault(); e.stopPropagation(); v.currentTime=Math.min((v.duration||0),v.currentTime+10); showCtrl('快进 +10s');
+                    } else if(k==='ArrowLeft'){
+                      e.preventDefault(); e.stopPropagation(); v.currentTime=Math.max(0,v.currentTime-10); showCtrl('快退 -10s');
+                    } else if(k==='ArrowUp'){
+                      e.preventDefault(); e.stopPropagation(); __ri=(__ri+1)%__rates.length; v.playbackRate=__rates[__ri]; showCtrl('倍速');
                     }
                   }, true);
                 })();
