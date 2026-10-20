@@ -188,6 +188,46 @@ class MainActivity : Activity() {
                 })();
                 """
                 view?.evaluateJavascript(chListJs, null)
+
+                // 点播遥控器：确认=暂停/播放，上键=呼出控制栏/选集
+                val vodCtrlJs = """
+                (function(){
+                  if(window.__vodCtrl) return; window.__vodCtrl = true;
+                  var revealed=false;
+                  function vid(){return document.querySelector('video');}
+                  function showMsg(t){
+                    var m=document.getElementById('__msg');
+                    if(!m){m=document.createElement('div');m.id='__msg';
+                      m.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1000005;background:rgba(0,0,0,0.72);color:#fff;padding:16px 28px;border-radius:12px;font-size:26px;transition:opacity .3s;';
+                      document.body.appendChild(m);}
+                    m.textContent=t; m.style.opacity='1';
+                    clearTimeout(m.__t); m.__t=setTimeout(function(){m.style.opacity='0';},1200);
+                  }
+                  function setReveal(on){
+                    revealed=on;
+                    document.querySelectorAll('video').forEach(function(v){
+                      v.style.zIndex = on ? '1' : '999999';
+                      v.style.opacity = on ? '0.25' : '1';
+                    });
+                  }
+                  document.addEventListener('keydown',function(e){
+                    var v=vid(); if(!v) return;
+                    if(location.pathname.indexOf('live')>=0) return; // 直播页交给频道列表
+                    var k=e.key||'';
+                    if(k==='Enter'||k===' '){
+                      e.preventDefault(); e.stopPropagation();
+                      if(v.paused){v.play(); showMsg('▶ 播放');} else {v.pause(); showMsg('⏸ 已暂停');}
+                    } else if(k==='ArrowUp'){
+                      e.preventDefault();
+                      setReveal(!revealed);
+                      showMsg(revealed?'控制栏/选集已显示':'继续播放');
+                    } else if(k==='ArrowDown'){
+                      if(revealed){ e.preventDefault(); setReveal(false); }
+                    }
+                  }, true);
+                })();
+                """
+                view?.evaluateJavascript(vodCtrlJs, null)
             }
         }
 
