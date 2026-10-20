@@ -189,11 +189,11 @@ class MainActivity : Activity() {
                 """
                 view?.evaluateJavascript(chListJs, null)
 
-                // 点播遥控器：确认=暂停/播放，上键=呼出控制栏/选集
+                // 点播遥控器：确认=暂停/播放，返回=唤起选集/控制栏
                 val vodCtrlJs = """
                 (function(){
                   if(window.__vodCtrl) return; window.__vodCtrl = true;
-                  var revealed=false;
+                  window.__revealed=false;
                   function vid(){return document.querySelector('video');}
                   function showMsg(t){
                     var m=document.getElementById('__msg');
@@ -203,26 +203,25 @@ class MainActivity : Activity() {
                     m.textContent=t; m.style.opacity='1';
                     clearTimeout(m.__t); m.__t=setTimeout(function(){m.style.opacity='0';},1200);
                   }
-                  function setReveal(on){
-                    revealed=on;
+                  window.__doReveal=function(on){
+                    window.__revealed=on;
                     document.querySelectorAll('video').forEach(function(v){
                       v.style.zIndex = on ? '1' : '999999';
                       v.style.opacity = on ? '0.25' : '1';
                     });
-                  }
+                    if(on){ // 尝试滚动到选集区域
+                      var ep=[...document.querySelectorAll('*')].find(e=>/选集|正片|剧集/.test(e.textContent||'')&&e.children.length<6);
+                      if(ep) ep.scrollIntoView({block:'center',behavior:'smooth'});
+                      showMsg('选集/控制栏已显示');
+                    }
+                  };
                   document.addEventListener('keydown',function(e){
                     var v=vid(); if(!v) return;
-                    if(location.pathname.indexOf('live')>=0) return; // 直播页交给频道列表
+                    if(location.pathname.indexOf('live')>=0) return;
                     var k=e.key||'';
                     if(k==='Enter'||k===' '){
                       e.preventDefault(); e.stopPropagation();
                       if(v.paused){v.play(); showMsg('▶ 播放');} else {v.pause(); showMsg('⏸ 已暂停');}
-                    } else if(k==='ArrowUp'){
-                      e.preventDefault();
-                      setReveal(!revealed);
-                      showMsg(revealed?'控制栏/选集已显示':'继续播放');
-                    } else if(k==='ArrowDown'){
-                      if(revealed){ e.preventDefault(); setReveal(false); }
                     }
                   }, true);
                 })();
@@ -283,6 +282,18 @@ class MainActivity : Activity() {
             web.webChromeClient?.onHideCustomView()
             return
         }
-        if (web.canGoBack()) web.goBack() else super.onBackPressed()
+        // 点播播放中按返回：先唤起选集/控制栏，不退出；已唤起则正常后退
+        web.evaluateJavascript("""
+          (function(){
+            var v=document.querySelector('video');
+            if(!v || location.pathname.indexOf('live')>=0) return 'normal';
+            if(window.__revealed){ window.__doReveal(false); return 'normal'; }
+            window.__doReveal(true); return 'intercept';
+          })()
+        """) { res ->
+            if (res.trim() != "\"intercept\"") {
+                if (web.canGoBack()) web.goBack() else super.onBackPressed()
+            }
+        }
     }
 }
