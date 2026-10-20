@@ -76,12 +76,18 @@ class MainActivity : Activity() {
                   if(window.__videoFit) return; window.__videoFit = true;
                   function fit(v){
                     if(!v) return;
-                    v.style.position='fixed';
-                    v.style.top='0'; v.style.left='0';
-                    v.style.width='100vw'; v.style.height='100vh';
-                    v.style.zIndex = (window.__revealed ? '1' : '999999');
-                    v.style.objectFit='contain';
-                    v.style.background='#000';
+                    v.style.setProperty('position','fixed','important');
+                    v.style.setProperty('top','0','important');
+                    v.style.setProperty('left','0','important');
+                    v.style.setProperty('width','100vw','important');
+                    v.style.setProperty('height','100vh','important');
+                    v.style.setProperty('z-index', (window.__revealed ? '1' : '2147483647'),'important');
+                    v.style.setProperty('object-fit','cover','important');
+                    v.style.setProperty('background','#000','important');
+                    // 隐藏顶部标题栏
+                    document.querySelectorAll('header,nav,[class*="sticky"]').forEach(function(h){
+                      h.style.setProperty('display', window.__revealed ? '' : 'none','important');
+                    });
                   }
                   function scan(){
                     document.querySelectorAll('video').forEach(function(v){ fit(v); });
