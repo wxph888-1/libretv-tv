@@ -27,6 +27,7 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
         WebView.setWebContentsDebuggingEnabled(true)
         web = WebView(this)
         setContentView(web)
